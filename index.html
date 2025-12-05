@@ -998,10 +998,10 @@
             const b = maskPixel[2];
 
             // Track mask uses brightness to indicate drivable areas
-            // Bright pixels (white/light) = drivable track
-            // Dark pixels (black) = off-track/non-drivable
+            // Dark pixels (black/dark gray) = drivable track (asphalt)
+            // Bright pixels (white/light) = off-track/non-drivable (grass, barriers)
             const brightness = (r + g + b) / 3;
-            return brightness > 128; // Threshold: above mid-gray is drivable
+            return brightness < 200; // Threshold: below this brightness is drivable track
         }
 
         // Fallback: sample the painted track art
