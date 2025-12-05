@@ -2031,15 +2031,8 @@
 
     // Check if kart is on the valid track area
     function isOnValidTrack(x, y) {
-        // Prefer the explicit mask overlay when available
-        if (trackMaskLoaded && trackMaskCtx) {
-            return isPixelOnTrack(x, y);
-        }
-
-        // Fallback to color-based detection from track image
-        if (trackCollisionCtx && trackImgLoaded) {
-            return isPixelOnTrack(x, y);
-        }
+        // MASK DETECTION COMPLETELY DISABLED - Using simple centerline check only
+        // The pixel-based detection was preventing karts from moving
         return checkOnTrack(x, y);
     }
 
