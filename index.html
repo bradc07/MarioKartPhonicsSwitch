@@ -928,6 +928,7 @@
     let trackImgLoaded = false;
 
     // Track mask overlay to precisely gate where karts can drive
+    const USE_TRACK_MASK = false; // SET TO true TO ENABLE MASK DETECTION
     const trackMaskImg = new Image();
     trackMaskImg.src = 'track_mask.png.png';
     let trackMaskLoaded = false;
@@ -968,7 +969,22 @@
         trackMaskCanvas.height = trackMaskHeight;
         trackMaskCtx = trackMaskCanvas.getContext('2d', { willReadFrequently: true });
         trackMaskCtx.drawImage(trackMaskImg, 0, 0);
-        console.log('Track mask loaded for pixel-perfect collision');
+        console.log('✅ Track mask loaded:', trackMaskWidth, 'x', trackMaskHeight);
+        console.log('   Mask detection is:', USE_TRACK_MASK ? 'ENABLED' : 'DISABLED (change USE_TRACK_MASK to enable)');
+
+        // Sample a few pixels at start positions to debug
+        if (USE_TRACK_MASK) {
+            console.log('--- Testing mask at typical start positions ---');
+            const testPositions = [
+                {x: 120, y: 310}, {x: 120, y: 350}, {x: 100, y: 320}, {x: 100, y: 360}
+            ];
+            testPositions.forEach((pos, i) => {
+                const mapped = mapCanvasToImageCoords(pos.x, pos.y, trackMaskWidth, trackMaskHeight);
+                const pixel = trackMaskCtx.getImageData(mapped.x, mapped.y, 1, 1).data;
+                const brightness = (pixel[0] + pixel[1] + pixel[2]) / 3;
+                console.log(`  Kart ${i+1} start (${pos.x},${pos.y}) -> mask(${mapped.x},${mapped.y}) RGB(${pixel[0]},${pixel[1]},${pixel[2]}) brightness=${brightness.toFixed(0)} drivable=${brightness > 128}`);
+            });
+        }
     };
     trackMaskImg.onerror = () => { console.error('Failed to load track_mask.png.png'); trackMaskLoaded = false; };
 
@@ -2031,8 +2047,12 @@
 
     // Check if kart is on the valid track area
     function isOnValidTrack(x, y) {
-        // MASK DETECTION COMPLETELY DISABLED - Using simple centerline check only
-        // The pixel-based detection was preventing karts from moving
+        // Use mask detection if enabled and loaded
+        if (USE_TRACK_MASK && trackMaskCtx && trackMaskLoaded) {
+            return isPixelOnTrack(x, y);
+        }
+
+        // Otherwise use simple centerline check
         return checkOnTrack(x, y);
     }
 
