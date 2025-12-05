@@ -989,6 +989,7 @@
             const { x: maskX, y: maskY } = mapCanvasToImageCoords(canvasX, canvasY, trackMaskWidth, trackMaskHeight);
 
             if (maskX < 0 || maskX >= trackMaskWidth || maskY < 0 || maskY >= trackMaskHeight) {
+                console.log('DEBUG: Position outside mask bounds', maskX, maskY);
                 return false; // Outside the mask is not drivable
             }
 
@@ -1001,6 +1002,14 @@
             // Dark pixels (black/dark gray) = drivable track (asphalt)
             // Bright pixels (white/light) = off-track/non-drivable (grass, barriers)
             const brightness = (r + g + b) / 3;
+
+            // Debug logging (sample every 60 frames)
+            if (Math.random() < 0.016) {
+                console.log('DEBUG Mask: pos', canvasX.toFixed(0), canvasY.toFixed(0),
+                           'RGB', r, g, b, 'brightness', brightness.toFixed(0),
+                           'onTrack?', brightness < 200);
+            }
+
             return brightness < 200; // Threshold: below this brightness is drivable track
         }
 
@@ -1104,8 +1113,8 @@
                 // Simple friction
                 this.speed *= FRICTION;
 
-                // Clamp movement to the painted track mask - check entire kart footprint
-                if (!isKartFullyOnTrack(this)) {
+                // Clamp movement to the painted track - simplified center check for now
+                if (!isOnValidTrack(this.x, this.y)) {
                     this.x = prevX;
                     this.y = prevY;
                     this.speed = Math.min(this.speed, OFFROAD_SPEED * 0.5);
@@ -2022,8 +2031,14 @@
 
     // Check if kart is on the valid track area
     function isOnValidTrack(x, y) {
-        // Prefer the explicit mask overlay when available, fallback to centerline check otherwise
-        if (trackMaskLoaded && trackMaskCtx) {
+        // TEMPORARILY DISABLED: Mask detection needs debugging
+        // Fall back to color-based detection from track image
+        if (false && trackMaskLoaded && trackMaskCtx) {
+            return isPixelOnTrack(x, y);
+        }
+
+        // Use the working color-based fallback instead
+        if (trackCollisionCtx && trackImgLoaded) {
             return isPixelOnTrack(x, y);
         }
         return checkOnTrack(x, y);
