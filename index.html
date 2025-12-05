@@ -999,18 +999,18 @@
             const b = maskPixel[2];
 
             // Track mask uses brightness to indicate drivable areas
-            // Dark pixels (black/dark gray) = drivable track (asphalt)
-            // Bright pixels (white/light) = off-track/non-drivable (grass, barriers)
+            // WHITE pixels = drivable track surface
+            // BLACK pixels = non-drivable (center island, off-track)
             const brightness = (r + g + b) / 3;
 
             // Debug logging (sample every 60 frames)
             if (Math.random() < 0.016) {
                 console.log('DEBUG Mask: pos', canvasX.toFixed(0), canvasY.toFixed(0),
                            'RGB', r, g, b, 'brightness', brightness.toFixed(0),
-                           'onTrack?', brightness < 200);
+                           'onTrack?', brightness > 128);
             }
 
-            return brightness < 200; // Threshold: below this brightness is drivable track
+            return brightness > 128; // Threshold: white (bright) pixels are drivable track
         }
 
         // Fallback: sample the painted track art
@@ -2031,13 +2031,12 @@
 
     // Check if kart is on the valid track area
     function isOnValidTrack(x, y) {
-        // TEMPORARILY DISABLED: Mask detection needs debugging
-        // Fall back to color-based detection from track image
-        if (false && trackMaskLoaded && trackMaskCtx) {
+        // Prefer the explicit mask overlay when available
+        if (trackMaskLoaded && trackMaskCtx) {
             return isPixelOnTrack(x, y);
         }
 
-        // Use the working color-based fallback instead
+        // Fallback to color-based detection from track image
         if (trackCollisionCtx && trackImgLoaded) {
             return isPixelOnTrack(x, y);
         }
