@@ -993,12 +993,15 @@
             }
 
             const maskPixel = trackMaskCtx.getImageData(maskX, maskY, 1, 1).data;
-            const alpha = maskPixel[3];
+            const r = maskPixel[0];
+            const g = maskPixel[1];
+            const b = maskPixel[2];
 
-            // Treat any non-transparent pixel as valid track. The mask uses transparency to
-            // outline the drivable surface, so we shouldn't exclude dark pixels (e.g., if the
-            // mask art is black on transparent) by requiring brightness.
-            return alpha > 10;
+            // Track mask uses brightness to indicate drivable areas
+            // Bright pixels (white/light) = drivable track
+            // Dark pixels (black) = off-track/non-drivable
+            const brightness = (r + g + b) / 3;
+            return brightness > 128; // Threshold: above mid-gray is drivable
         }
 
         // Fallback: sample the painted track art
@@ -1101,8 +1104,8 @@
                 // Simple friction
                 this.speed *= FRICTION;
 
-                // Clamp movement to the painted track mask
-                if (!isOnValidTrack(this.x, this.y)) {
+                // Clamp movement to the painted track mask - check entire kart footprint
+                if (!isKartFullyOnTrack(this)) {
                     this.x = prevX;
                     this.y = prevY;
                     this.speed = Math.min(this.speed, OFFROAD_SPEED * 0.5);
@@ -2024,6 +2027,26 @@
             return isPixelOnTrack(x, y);
         }
         return checkOnTrack(x, y);
+    }
+
+    // Enhanced check: verify entire kart footprint is on track, not just center
+    function isKartFullyOnTrack(kart) {
+        const kartRadius = 20; // Approximate kart collision radius
+        const checkPoints = [
+            { x: kart.x, y: kart.y }, // Center
+            { x: kart.x + Math.cos(kart.angle) * kartRadius, y: kart.y + Math.sin(kart.angle) * kartRadius }, // Front
+            { x: kart.x - Math.cos(kart.angle) * kartRadius, y: kart.y - Math.sin(kart.angle) * kartRadius }, // Back
+            { x: kart.x + Math.cos(kart.angle + Math.PI/2) * kartRadius * 0.7, y: kart.y + Math.sin(kart.angle + Math.PI/2) * kartRadius * 0.7 }, // Left
+            { x: kart.x + Math.cos(kart.angle - Math.PI/2) * kartRadius * 0.7, y: kart.y + Math.sin(kart.angle - Math.PI/2) * kartRadius * 0.7 }  // Right
+        ];
+
+        // All check points must be on valid track
+        for (let point of checkPoints) {
+            if (!isOnValidTrack(point.x, point.y)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     // Push kart back onto track if it goes past the barrier (invisible walls)
