@@ -928,7 +928,7 @@
     let trackImgLoaded = false;
 
     // Track mask overlay to precisely gate where karts can drive
-    const USE_TRACK_MASK = false; // SET TO true TO ENABLE MASK DETECTION
+    const USE_TRACK_MASK = true; // SET TO true TO ENABLE MASK DETECTION
     const trackMaskImg = new Image();
     trackMaskImg.src = 'track_mask.png.png';
     let trackMaskLoaded = false;
@@ -1019,14 +1019,20 @@
             // BLACK pixels = non-drivable (center island, off-track)
             const brightness = (r + g + b) / 3;
 
-            // Debug logging (sample every 60 frames)
-            if (Math.random() < 0.016) {
-                console.log('DEBUG Mask: pos', canvasX.toFixed(0), canvasY.toFixed(0),
-                           'RGB', r, g, b, 'brightness', brightness.toFixed(0),
-                           'onTrack?', brightness > 128);
+            // Debug logging (sample every 120 checks)
+            pixelDebugCounter++;
+            if (pixelDebugCounter % 120 === 0) {
+                console.log(`🔍 Mask check #${pixelDebugCounter}: canvas(${canvasX.toFixed(0)},${canvasY.toFixed(0)}) → mask(${maskX},${maskY}) RGB(${r},${g},${b}) brightness=${brightness.toFixed(0)} → ${brightness > 128 ? '✅ ON TRACK' : '❌ OFF TRACK'}`);
             }
 
-            return brightness > 128; // Threshold: white (bright) pixels are drivable track
+            const isOnTrack = brightness > 128;
+
+            // Log when blocking movement
+            if (!isOnTrack && pixelDebugCounter % 60 === 0) {
+                console.warn(`⚠️ Kart blocked at canvas(${canvasX.toFixed(0)},${canvasY.toFixed(0)}) - brightness ${brightness.toFixed(0)} too dark`);
+            }
+
+            return isOnTrack; // Threshold: white (bright) pixels are drivable track
         }
 
         // Fallback: sample the painted track art
