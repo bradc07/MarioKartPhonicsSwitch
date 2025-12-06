@@ -2432,6 +2432,31 @@
         karts.filter(k => !k.isPlayer).forEach(k => k.draw());
         playerKart.draw();
 
+        // Visual debug overlay for mask detection
+        if (USE_TRACK_MASK && trackMaskLoaded) {
+            const px = playerKart.x;
+            const py = playerKart.y;
+            const isOnTrack = isOnValidTrack(px, py);
+            const { x: maskX, y: maskY } = mapCanvasToImageCoords(px, py, trackMaskWidth, trackMaskHeight);
+            const maskPixel = trackMaskCtx.getImageData(maskX, maskY, 1, 1).data;
+            const brightness = (maskPixel[0] + maskPixel[1] + maskPixel[2]) / 3;
+
+            // Draw debug info on screen
+            ctx.save();
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(10, 80, 400, 120);
+            ctx.fillStyle = isOnTrack ? '#00ff00' : '#ff0000';
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText(`MASK DEBUG`, 20, 100);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '14px monospace';
+            ctx.fillText(`Canvas: (${px.toFixed(0)}, ${py.toFixed(0)})`, 20, 125);
+            ctx.fillText(`Mask:   (${maskX}, ${maskY})`, 20, 145);
+            ctx.fillText(`RGB: (${maskPixel[0]}, ${maskPixel[1]}, ${maskPixel[2]})`, 20, 165);
+            ctx.fillText(`Brightness: ${brightness.toFixed(0)} ${isOnTrack ? '✅ ON TRACK' : '❌ OFF TRACK'}`, 20, 185);
+            ctx.restore();
+        }
+
         updatePhysics();
 
         if (gameState === 'racing') {
